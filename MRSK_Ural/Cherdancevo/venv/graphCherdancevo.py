@@ -23,6 +23,10 @@ def loadConjMatrix(wbName=wbName, sheetName=sheetConjMatrix, cellsInd=cellConjMa
         arrayRowLine.clear()
     return conjMatrix
 
+# Загрузка матрицы соседей из эксель-файла
+#def loadNeighbors(wbName=wbName, sheetName='neighbors', cellsInd=('B2', 'EY155')):
+
+
  # Загрузка данных по ТП в словарь из excel-файла в виде:
   # №_линии: (№_ТП, номин_мощн, загрузка)
 def loadDataTP(wbName=wbName, sheetName=sheetDataTP, cellsInd=cellDataTP):

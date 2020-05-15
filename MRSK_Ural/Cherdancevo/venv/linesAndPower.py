@@ -1,58 +1,32 @@
+import numpy as np
 
  # для каждой позиции расчитывается количество следующих за ней линий
 def protectLines(inMatrix):
     dictProtectLines = {}
     for i in range(len(inMatrix)):
-        dictProtectLines[i+1] = sum(inMatrix[i])
+        dictProtectLines[i+1] = sum(inMatrix[i]) #np.array(sum(inMatrix[i]))
     return dictProtectLines
 
+ # расчет количесвта защищаемых линий для соответсвующей позиции КА
+def lineProtect(arrayPos, dictProtectLines, matrixLine):
+    newDictProtLines = {}
+    additProtLines = []
+    reversArrayPos = arrayPos[::-1]
+    newDictProtLines[reversArrayPos[0]] = dictProtectLines[reversArrayPos[0]]
+    additProtLines.append(reversArrayPos[0])
+    for pos in reversArrayPos[1:]:
+        i = 0
+        posLines = dictProtectLines[pos]
+        while i < len(additProtLines):
+            if matrixLine[pos-1][additProtLines[i]-1] == 1:
+                posLines -= dictProtectLines[additProtLines[i]]
+                del additProtLines[i]
+            else: i+= 1
+        newDictProtLines[pos] = posLines
+        additProtLines.append(pos)
 
-# Функция нахождения зависимых линий. На выходе - зависмые линии для конкретного расположения
-def lineDepend(arrayPos, matrixLine):
-    lineDependReturn = []
-    for posJ in range(len(arrayPos)):
-        sliceArray = arrayPos[posJ : len(arrayPos)]
-        workArray = []
-        if len(sliceArray) > 1:
-            for i in range(1, len(sliceArray)):
-                row = sliceArray[0] - 1
-                col = sliceArray[i] - 1
-                if matrixLine[row][col] == 1: # если линии зависимы, то оставляем
-                    workArray.append(sliceArray[i])
+    return newDictProtLines
 
-            if len(workArray) > 1:
-                delIt = 1
-                array1 = workArray
-                array3 = []
-                while(delIt < len(array1)):
-                    array2 = []
-                    array3.append(array1[delIt-1])
-                    for j in range(delIt, len(array1)):
-                        row = array1[delIt-1]-1
-                        col = array1[j] - 1
-                        if matrixLine[row][col] == 0:  # если линии независимы, то оставляем
-                            array2.append(array1[j])
-                    array1 = array3+array2
-                    delIt += 1
-                workArray = array1
-        lineDependReturn.append([sliceArray[0]]+workArray)
-
-    return lineDependReturn
-
-
-# функция подсчета защищаемых КА линий в зависимости от расположения
-def lineProtect(dependLines, dictProtectLines):
-    lineProtectReturn = []
-    for arrPos in dependLines:
-        protectLinesPosit = dictProtectLines[arrPos[0]]
-        if len(arrPos) > 1:
-            for i in range(1, len(arrPos)):
-                protectLinesPosit -= dictProtectLines[arrPos[i]]
-        lineProtectReturn.append(protectLinesPosit)
-
-    if len(lineProtectReturn) != len(dependLines):
-        print("lineProtect(): Количесвто значений в входном массиве не равно в выходном")
-    else: return lineProtectReturn
 
 # рассчитывается количество линий, влияющих на функционирование КА на соответсвующей позиции
 def lineInfluence(positions, amountLines):
@@ -80,8 +54,80 @@ def powerProtect(positions, arrayProtectPower):
 
 
  # рассчитывается математическое ожидание
-def mathExpect(protectLines, influenceLines, power):
+def mathExpect(positions, protectLines, arrayProtectPower, amountLines):
     me = 0
-    for i in range(len(protectLines)):
-        me += (protectLines[i] / influenceLines[i]) * power[i]
-    return me
+    for pos in positions:
+        me += protectLines[pos] * arrayProtectPower[pos-1]
+
+    return me/amountLines
+
+def calcForJ(posit, matrixGraph):
+    positIsProt = []
+    positIndOne = []
+    for j in range(-1, -len(posit), -1):
+        isBreak = False
+        for k in range(-2, -len(posit), -1):
+            if matrixGraph[posit[j]-1][posit[k]-1] == 1:
+                break
+                isBreak = True
+        if isBreak:
+            continue
+        else:
+            #print(posit)
+            #print(j)
+            #print(posit[-len(posit)], posit[j])
+            if matrixGraph[posit[-len(posit)]-1][posit[j]-1] == 1: positIsProt.append(j)
+            else: positIndOne.append(j)
+    positIndOne.append(-len(posit))
+
+    return (positIsProt, positIndOne)
+
+# поиск независимых позиций
+def searchIndepPos(positions, matrixGraph):
+    lstIndependPositions = []
+    lenPos = len(positions)
+    for posI in range(lenPos-1):
+        isBreak = False
+        for posJ in range(posI+1,lenPos):
+            if matrixGraph[positions[posJ]-1][positions[posI]-1] == 1:
+                isBreak = True
+                break
+        if isBreak: continue
+        lstIndependPositions.append(positions[posI])
+    lstIndependPositions.append(positions[-1])
+    return tuple(lstIndependPositions)
+
+# расчет кол-ва защищаемых линий
+def calculProtLines(positions, matrixGraph, dictProtLines):
+    lstProtLines = []
+    dictPosAndPrL = {}
+    for iPos in positions:
+        positProtLines = dictProtLines[iPos]
+        #j = 0
+        #lstIndPL = []
+        for jPos in list(dictPosAndPrL.keys()):
+        #for jPos in dictPosAndPrL:
+            if matrixGraph[iPos - 1][jPos - 1] == 1:
+                positProtLines -= dictPosAndPrL[jPos]
+                #lstIndPL.append(jPos)
+                del dictPosAndPrL[jPos]
+        lstProtLines.append(positProtLines)
+        # for pos in lstIndPL:
+        #     del dictPosAndPrL[pos]
+        dictPosAndPrL[iPos] = positProtLines
+    return lstProtLines
+
+# проверка на наличие соседних позиций.
+def notIsNeigh(listPos, dictNeigh):
+    breakGenPos = True
+    # if listPos[-1] in dictNeigh:
+    #     for neigh in dictNeigh[listPos[-1]]:
+    #         if neigh in listPos[:-1]:
+    #             breakGenPos = False
+    #             break
+    rowEl = listPos[-1]-1
+    for el in reversed(listPos[:-1]):
+        if dictNeigh[rowEl][el-1] == 1:
+            breakGenPos = False
+            break
+    return breakGenPos

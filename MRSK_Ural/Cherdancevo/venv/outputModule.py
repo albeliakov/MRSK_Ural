@@ -53,14 +53,16 @@ def transmitData(outData):
     sheet1 = book.add_sheet("Выходные данные")
 
     cols = ['A', 'B', 'C']
-    colNames = ['Среднее количество отключаемых потребителей',
+    colNames = ['Среднее количество отключаемой мощности',
                    'Количество устанавливаемых КА',
                    'Места для установки']
 
     # формирование данных, для записи в эксель-файле
     arrayOutData = []
     for nKA in sortByME(outData):
-        arrayOutData.append((round(nKA[0], 2), nKA[1], viewPositions(nKA[2])))
+        arrayOutData.append((round(nKA[0], 1), nKA[1], viewPositions(nKA[2])))
+    #for nKA in outData:
+    #    arrayOutData.append((outData[nKA][1], nKA, viewPositions(outData[nKA][0])))
 
      # запись в excel-файл
     writeExcel(book, sheet1, cols, colNames, arrayOutData)
@@ -68,7 +70,7 @@ def transmitData(outData):
      # построение графика
     xyOD = xy2XandY(arrayOutData)
     plt.plot(xyOD[1], xyOD[0])
-    plt.ylabel('Среднее количество отключаемых потребителей')
+    plt.ylabel('Среднее количество отключаемой мощности')
     plt.xlabel('Количество устанавливаемых КА')
     plt.grid()
     plt.show()
